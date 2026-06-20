@@ -105,6 +105,7 @@ main {
   padding: 10px 14px;
   border-radius: 10px;
   max-width: 80%;
+  overflow-wrap: break-word;
 }
 
 .bubble.user {
@@ -191,5 +192,57 @@ button:disabled {
 @keyframes spin {
   to {
     transform: rotate(360deg);
+  }
+}
+
+@media (max-width: 700px) {
+  .app {
+    padding: 12px;
+  }
+
+  header h1 {
+    font-size: 1.25rem;
+  }
+
+  nav button {
+    padding: 8px 12px;
+    font-size: 0.9rem;
+  }
+
+  .layout {
+    flex-direction: column;
+  }
+
+  .conversation-list {
+    width: 100%;
+    flex-direction: row;
+    overflow-x: auto;
+    padding-bottom: 4px;
+  }
+
+  .new-chat {
+    flex-shrink: 0;
+    white-space: nowrap;
+  }
+
+  .conversation-item {
+    flex-shrink: 0;
+    width: 160px;
+  }
+
+  .bubble {
+    max-width: 92%;
+  }
+
+  .chat-input {
+    flex-wrap: wrap;
+  }
+
+  .chat-input input {
+    flex: 1 1 100%;
+  }
+
+  .chat-input button {
+    flex: 1 1 100%;
   }
 }
