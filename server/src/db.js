@@ -49,10 +49,15 @@ db.exec(`
   );
 `);
 
-const messageColumns = db.prepare('PRAGMA table_info(messages)').all();
-if (!messageColumns.some((col) => col.name === 'image')) {
-  db.exec('ALTER TABLE messages ADD COLUMN image TEXT');
+function ensureColumn(table, column, definition) {
+  const columns = db.prepare(`PRAGMA table_info(${table})`).all();
+  if (!columns.some((col) => col.name === column)) {
+    db.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`);
+  }
 }
+
+ensureColumn('conversations', 'title', 'TEXT');
+ensureColumn('messages', 'image', 'TEXT');
 
 export function ensureConversation(id) {
   db.prepare('INSERT OR IGNORE INTO conversations (id) VALUES (?)').run(id);
