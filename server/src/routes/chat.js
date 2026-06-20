@@ -1,6 +1,6 @@
 import express from 'express';
 import Anthropic from '@anthropic-ai/sdk';
-import { appendMessage, getMessages } from '../db.js';
+import { appendMessage, getMessages, listConversations, deleteConversation } from '../db.js';
 
 const router = express.Router();
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
@@ -11,8 +11,17 @@ and brainstorm concept ideas tailored to their preferences (themes, body part, s
 size, pain tolerance, budget). Ask clarifying questions when the request is vague.
 Keep answers practical and concise.`;
 
+router.get('/', (req, res) => {
+  res.json({ conversations: listConversations() });
+});
+
 router.get('/:conversationId', (req, res) => {
   res.json({ messages: getMessages(req.params.conversationId) });
+});
+
+router.delete('/:conversationId', (req, res) => {
+  deleteConversation(req.params.conversationId);
+  res.json({ ok: true });
 });
 
 router.post('/', async (req, res) => {
@@ -22,7 +31,9 @@ router.post('/', async (req, res) => {
   }
 
   appendMessage(conversationId, 'user', message);
-  const history = getMessages(conversationId);
+  const history = getMessages(conversationId)
+    .filter((m) => !m.image)
+    .map(({ role, content }) => ({ role, content }));
 
   try {
     const response = await anthropic.messages.create({
