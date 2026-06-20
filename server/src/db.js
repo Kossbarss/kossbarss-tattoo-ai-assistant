@@ -22,6 +22,31 @@ db.exec(`
     image TEXT,
     created_at TEXT NOT NULL DEFAULT (datetime('now'))
   );
+
+  CREATE TABLE IF NOT EXISTS users (
+    token TEXT PRIMARY KEY,
+    email TEXT NOT NULL,
+    phone TEXT,
+    name TEXT,
+    is_active INTEGER NOT NULL DEFAULT 1,
+    claimed INTEGER NOT NULL DEFAULT 0,
+    claimed_at TEXT,
+    user_level TEXT,
+    selected_style TEXT,
+    weekly_practice_time TEXT,
+    goal TEXT,
+    thirty_day_plan_progress INTEGER NOT NULL DEFAULT 0,
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    last_active_at TEXT
+  );
+
+  CREATE TABLE IF NOT EXISTS events_log (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    token TEXT NOT NULL REFERENCES users(token),
+    event_type TEXT NOT NULL,
+    value TEXT,
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+  );
 `);
 
 export function ensureConversation(id) {
@@ -58,4 +83,41 @@ export function listConversations() {
 export function deleteConversation(conversationId) {
   db.prepare('DELETE FROM messages WHERE conversation_id = ?').run(conversationId);
   db.prepare('DELETE FROM conversations WHERE id = ?').run(conversationId);
+}
+
+export function createUser({ token, email, phone = null }) {
+  db.prepare(
+    'INSERT INTO users (token, email, phone) VALUES (?, ?, ?)'
+  ).run(token, email, phone);
+}
+
+export function getUserByToken(token) {
+  return db.prepare('SELECT * FROM users WHERE token = ?').get(token);
+}
+
+export function updateUserProfile(token, fields) {
+  const allowed = [
+    'name',
+    'user_level',
+    'selected_style',
+    'weekly_practice_time',
+    'goal',
+    'thirty_day_plan_progress',
+  ];
+  const updates = Object.keys(fields).filter((key) => allowed.includes(key));
+  if (updates.length === 0) return;
+
+  const setClause = updates.map((key) => `${key} = ?`).join(', ');
+  const values = updates.map((key) => fields[key]);
+  db.prepare(`UPDATE users SET ${setClause} WHERE token = ?`).run(...values, token);
+}
+
+export function touchUserLastActive(token) {
+  db.prepare("UPDATE users SET last_active_at = datetime('now') WHERE token = ?").run(token);
+}
+
+export function logEvent(token, eventType, value = null) {
+  db.prepare(
+    'INSERT INTO events_log (token, event_type, value) VALUES (?, ?, ?)'
+  ).run(token, eventType, value);
 }
