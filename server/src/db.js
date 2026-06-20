@@ -49,6 +49,11 @@ db.exec(`
   );
 `);
 
+const messageColumns = db.prepare('PRAGMA table_info(messages)').all();
+if (!messageColumns.some((col) => col.name === 'image')) {
+  db.exec('ALTER TABLE messages ADD COLUMN image TEXT');
+}
+
 export function ensureConversation(id) {
   db.prepare('INSERT OR IGNORE INTO conversations (id) VALUES (?)').run(id);
 }
