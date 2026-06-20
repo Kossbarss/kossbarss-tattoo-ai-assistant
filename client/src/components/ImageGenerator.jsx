@@ -1,6 +1,6 @@
 import { useState } from 'react';
 
-export default function ImageGenerator() {
+export default function ImageGenerator({ conversationId, onImageSaved }) {
   const [prompt, setPrompt] = useState('');
   const [image, setImage] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -16,11 +16,15 @@ export default function ImageGenerator() {
       const res = await fetch('/api/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt }),
+        body: JSON.stringify({ prompt, conversationId }),
       });
       const data = await res.json();
-      if (data.image) setImage(data.image);
-      else setError(data.error || 'No image returned');
+      if (data.image) {
+        setImage(data.image);
+        onImageSaved?.();
+      } else {
+        setError(data.error || 'No image returned');
+      }
     } catch {
       setError('Something went wrong. Try again.');
     } finally {
@@ -37,10 +41,17 @@ export default function ImageGenerator() {
         rows={3}
       />
       <button onClick={generate} disabled={loading}>
-        {loading ? 'Generating...' : 'Generate'}
+        {loading ? <span className="spinner" /> : 'Generate'}
       </button>
       {error && <p className="error">{error}</p>}
-      {image && <img src={image} alt="Generated tattoo idea" className="result-image" />}
+      {image && (
+        <div className="result">
+          <img src={image} alt="Generated tattoo idea" className="result-image" />
+          <a href={image} download="tattoo-idea.png" className="download-link">
+            Download
+          </a>
+        </div>
+      )}
     </div>
   );
 }
