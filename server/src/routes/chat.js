@@ -1,5 +1,6 @@
 import express from 'express';
 import Anthropic from '@anthropic-ai/sdk';
+import { appendMessage, getMessages } from '../db.js';
 
 const router = express.Router();
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
@@ -10,20 +11,29 @@ and brainstorm concept ideas tailored to their preferences (themes, body part, s
 size, pain tolerance, budget). Ask clarifying questions when the request is vague.
 Keep answers practical and concise.`;
 
+router.get('/:conversationId', (req, res) => {
+  res.json({ messages: getMessages(req.params.conversationId) });
+});
+
 router.post('/', async (req, res) => {
-  const { messages } = req.body;
-  if (!Array.isArray(messages) || messages.length === 0) {
-    return res.status(400).json({ error: 'messages array is required' });
+  const { conversationId, message } = req.body;
+  if (!conversationId || !message) {
+    return res.status(400).json({ error: 'conversationId and message are required' });
   }
+
+  appendMessage(conversationId, 'user', message);
+  const history = getMessages(conversationId);
 
   try {
     const response = await anthropic.messages.create({
       model: 'claude-sonnet-4-6',
       max_tokens: 1024,
       system: SYSTEM_PROMPT,
-      messages,
+      messages: history,
     });
-    res.json({ reply: response.content[0]?.text ?? '' });
+    const reply = response.content[0]?.text ?? '';
+    appendMessage(conversationId, 'assistant', reply);
+    res.json({ reply });
   } catch (err) {
     console.error('chat error', err);
     res.status(502).json({ error: 'Failed to reach the AI consultant' });

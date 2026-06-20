@@ -1,14 +1,31 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+
+function getConversationId() {
+  let id = localStorage.getItem('tattoo-ai-conversation-id');
+  if (!id) {
+    id = crypto.randomUUID();
+    localStorage.setItem('tattoo-ai-conversation-id', id);
+  }
+  return id;
+}
 
 export default function Chat() {
+  const [conversationId] = useState(getConversationId);
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
 
+  useEffect(() => {
+    fetch(`/api/chat/${conversationId}`)
+      .then((res) => res.json())
+      .then((data) => setMessages(data.messages || []))
+      .catch(() => {});
+  }, [conversationId]);
+
   async function sendMessage() {
     if (!input.trim() || loading) return;
-    const next = [...messages, { role: 'user', content: input }];
-    setMessages(next);
+    const userMessage = { role: 'user', content: input };
+    setMessages((prev) => [...prev, userMessage]);
     setInput('');
     setLoading(true);
 
@@ -16,12 +33,12 @@ export default function Chat() {
       const res = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ messages: next }),
+        body: JSON.stringify({ conversationId, message: input }),
       });
       const data = await res.json();
-      setMessages([...next, { role: 'assistant', content: data.reply || data.error }]);
+      setMessages((prev) => [...prev, { role: 'assistant', content: data.reply || data.error }]);
     } catch {
-      setMessages([...next, { role: 'assistant', content: 'Something went wrong. Try again.' }]);
+      setMessages((prev) => [...prev, { role: 'assistant', content: 'Something went wrong. Try again.' }]);
     } finally {
       setLoading(false);
     }

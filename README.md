@@ -27,6 +27,19 @@ npm run build          # builds client into client/dist
 NODE_ENV=production npm start   # server serves API + built client on PORT (default 3000)
 ```
 
+## Persistence
+
+Chat history is stored per-conversation in a local SQLite file (`server/data.sqlite` by default, override with `DATABASE_PATH`). The browser keeps a `conversationId` in `localStorage` and the server reloads history for that ID on each page load.
+
 ## Deployment
 
-See the deployment notes below for running this on a fresh Ubuntu 24.04 VPS behind Nginx with systemd and Let's Encrypt. Replace `<URL_РЕПОЗИТОРІЮ_...>` with this repo's clone URL; `PORT` defaults to `3000` and the start command is `npm run start`, matching `package.json`.
+### Docker
+
+```bash
+docker build -t tattoo-ai-assistant .
+docker run -p 3000:3000 --env-file server/.env tattoo-ai-assistant
+```
+
+### Bare-metal Ubuntu 24.04 VPS
+
+Run `deploy/setup.sh <git-clone-url> <domain> <email>` as root on a fresh VPS. It installs Node.js, Nginx, Certbot, creates a `deploy` user, clones/builds the app, installs the `deploy/myapp.service` systemd unit, configures `deploy/nginx.conf` as a reverse proxy, and issues a Let's Encrypt certificate. Fill in `server/.env` with `ANTHROPIC_API_KEY` and `OPENAI_API_KEY` before the service will work correctly.
