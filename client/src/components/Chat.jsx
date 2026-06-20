@@ -1,16 +1,6 @@
 import { useEffect, useState } from 'react';
 
-function getConversationId() {
-  let id = localStorage.getItem('tattoo-ai-conversation-id');
-  if (!id) {
-    id = crypto.randomUUID();
-    localStorage.setItem('tattoo-ai-conversation-id', id);
-  }
-  return id;
-}
-
-export default function Chat() {
-  const [conversationId] = useState(getConversationId);
+export default function Chat({ conversationId, onMessageSent }) {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
@@ -37,6 +27,7 @@ export default function Chat() {
       });
       const data = await res.json();
       setMessages((prev) => [...prev, { role: 'assistant', content: data.reply || data.error }]);
+      onMessageSent?.();
     } catch {
       setMessages((prev) => [...prev, { role: 'assistant', content: 'Something went wrong. Try again.' }]);
     } finally {
@@ -49,10 +40,14 @@ export default function Chat() {
       <div className="chat-log">
         {messages.map((m, i) => (
           <div key={i} className={`bubble ${m.role}`}>
-            {m.content}
+            {m.image ? <img src={m.image} alt="Generated tattoo idea" className="result-image" /> : m.content}
           </div>
         ))}
-        {loading && <div className="bubble assistant">...</div>}
+        {loading && (
+          <div className="bubble assistant">
+            <span className="spinner" />
+          </div>
+        )}
       </div>
       <div className="chat-input">
         <input
